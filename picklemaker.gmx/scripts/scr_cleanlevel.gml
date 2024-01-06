@@ -11,3 +11,5 @@ with obj_onewaywall
     instance_destroy()
 with obj_slope
     instance_destroy()
+with obj_collect
+    instance_destroy()

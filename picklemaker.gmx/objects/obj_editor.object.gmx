@@ -36,7 +36,6 @@ global.game = 0
 global.gamestr = "crzpkl"
 mstartx = 0
 mstarty = 0
-maxobj = 2048
 sx = 1 // obj x
 sy = 1 // obj y
 so = 0 // selected obj index
@@ -85,6 +84,7 @@ scheduler_resolution_set(1)
             <kind>1</kind>
             <string>/// moving camera, resetting stuff
 // camera movement
+if (instance_number(obj_editor) &gt; 1) {instance_destroy()}
 if mouse_check_button_pressed(mb_middle)
 {
     mstartx = mouse_x
@@ -128,8 +128,8 @@ if selected != noone
     }
     else
     {
-        selected.x += (keyboard_check_released(vk_right)-keyboard_check_released(vk_left))*16
-        selected.y += (keyboard_check_released(vk_down)-keyboard_check_released(vk_up))*16
+        selected.x += (keyboard_check_released(vk_right)-keyboard_check_released(vk_left))*(gridsize/2)
+        selected.y += (keyboard_check_released(vk_down)-keyboard_check_released(vk_up))*(gridsize/2)
         selected.x = clamp(selected.x,0,room_width-1)
         selected.y = clamp(selected.y,0,room_height-1)
     }
@@ -177,7 +177,7 @@ if keyboard_check(ord("Q"))
           <argument>
             <kind>1</kind>
             <string>var objtodel = instance_position( mouse_x, mouse_y, all )
-if objtodel != noone
+if objtodel != noone and objtodel != obj_ballviz
 {
     instance_destroy(objtodel)
 }
@@ -211,21 +211,19 @@ if instance_position( mouse_x, mouse_y, all ) == selected and selected != noone
     exit
 }
 selected = instance_position( mouse_x, mouse_y, all )
+if selected != noone and selected.object_index == obj_ballviz selected = noone
 if selected != noone
 {
     //selx = floor(selected.x/32)*32
     //sely = floor(selected.y/32)*32
     exit
 }
-if instance_count-1 &gt;= maxobj
-{
-    show_message("woah. that. is a bit too much.")
-    exit
-}
 if (not (mouse_x &lt; 0 or mouse_y &lt; 0)) and (not (mouse_x &gt; room_width-1 or mouse_y &gt; room_height-1))
 {
     with instance_create(floor(mouse_x/gridsize)*gridsize,floor(mouse_y/gridsize)*gridsize,objlist[so])
     {
+        if object_index == objSpring
+            y+=2   
         other.selected = self.id
         image_xscale = other.sx
         image_yscale = other.sy 
@@ -296,7 +294,7 @@ draw_set_halign(fa_right)
 draw_text(view_wport[0]-8,8,string(mouse_x)+" "+string(mouse_y))
 // bottom bar info (level info)
 draw_set_halign(fa_left)
-draw_text(8,view_hport[0]-12,levelname+" (by "+levelauthor+") "+string(instance_count-1)+"/"+string(maxobj)+" objects")
+draw_text(8,view_hport[0]-12,levelname+" (by "+levelauthor+")")
 draw_set_halign(fa_right)
 draw_text(view_wport[0]-8,view_hport[0]-12,string(room_width)+"x"+string(room_height))
 </string>
@@ -415,7 +413,7 @@ instance_create(0,0,obj_settingselect)
           <argument>
             <kind>1</kind>
             <string>/// credits
-show_message("PickleMaker v"+GM_version+"#A Level Editor for Cool Games#Made by#cache99 - coding#penoPleno - background")
+show_message("PickleMaker v"+GM_version+"#A Level Editor for Cool Games#Made by#cache99 - coding#penoPleno - background and Lart assets")
 show_message("How To Use##F1 - Save level#F2 - Load level for editing#F4 - this thing#F5 - Open the Setting Select#Q, E - Zoom#WASD or Middle mouse button - move camera#Arrow keys - resize item or selected object#Arrow keys + ctrl with object selected - move object#R - Reset size (doesnt work with selected)#T - Reset view#Right mouse button - remove object#Left mouse button - place object#Mouse wheel - change object")
 </string>
           </argument>
@@ -449,40 +447,27 @@ result = ini_read_string("data","data","")
 if result == ""
 {
     show_message("ERROR: Level doesnt exist or invalid")
+    exit
 }
 levelinfo = ds_list_create()
-ds_list_read(levelinfo,result)
 levelname = ini_read_string("info","name","level")
 levelauthor = ini_read_string("info","author","unknown")
-levelx = ini_read_real("info","x",1280)
-levely = ini_read_real("info","y",960)
+room_width = ini_read_real("info","x",1280)
+room_height = ini_read_real("info","y",960)
+ds_list_read(levelinfo,result)
 global.game = ini_read_real("info", "game", 0) // set the game as crazy pickle, for compatibility. Since im nice
 scr_setgame(global.game)
 ini_close()
-room_width = levelx
-room_height = levely
 show_debug_message("REMOVING PREVIOUS LEVEL")
 // remove useless
-with obj_solid
-    instance_destroy()
-with obj_tickleablesolid
-    instance_destroy()
-with obj_player
-    instance_destroy()
-with obj_baddie
-    instance_destroy()
-with obj_onewaywall
-    instance_destroy()
-with obj_slope
-    instance_destroy()
-    
+scr_cleanlevel()
 for (var i = 0; i &lt; ds_list_size(levelinfo); i++;)
 {
     object = ds_list_find_value(levelinfo,i);
-    show_debug_message(object)
     if object[2] != "obj_null"
     {
         objnamefuckshit = object[2]
+        /* this will be useful only after i add poopermario
         switch global.game
         {
             case 0: // crazy pickle
@@ -495,6 +480,7 @@ for (var i = 0; i &lt; ds_list_size(levelinfo); i++;)
                 objnamefuckshit+="_pooper"
                 break
         }
+        */
         obj = instance_create(real(object[0]),real(object[1]),asset_get_index(objnamefuckshit))
         with obj
         {
@@ -528,7 +514,7 @@ for (var i = 0; i &lt; ds_list_size(levelinfo); i++;)
             <kind>1</kind>
             <string>/// save level
 levelinfo = ds_list_create();
-ini_open(string_replace_all(levelname," ","_")+".crzpkl.ini");
+ini_open(string_replace_all(levelname," ","_")+"."+global.gamestr+".ini");
 ini_write_string("info", "name", levelname);
 ini_write_real("info", "x", room_width);
 ini_write_real("info", "y", room_height);
@@ -537,7 +523,7 @@ ini_write_real("info", "game", global.game)
 for (var i = 0; i &lt; instance_count; i++;)
 {
     object = instance_find(all,i);
-    if object_get_name(object.object_index) != "obj_editor"
+    if object.object_index != obj_editor
     {
         temparray = array_create(5)
         temparray[0] = object.x
