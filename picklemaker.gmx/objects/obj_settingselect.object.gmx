@@ -25,13 +25,20 @@
         <arguments>
           <argument>
             <kind>1</kind>
-            <string>instance_deactivate_object(obj_editor)
+            <string>obj_editor.selected = noone
+instance_deactivate_object(obj_editor)
 options[0] = "Level Name"
 options[1] = "Level Author"
 options[2] = "Level Width"
 options[3] = "Level Height"
-options[4] = "Reset Everything"
+options[4] = "Game"
+options[5] = "Reset Everything (type YES)"
+games[0] = "Crazy Pickle"
+games[1] = "Lart's Bigfat Diet"
+//games[2] = "Poopermario"
 sel = 0
+sel2 = global.game
+gameslen = array_length_1d(games)
 keyboard_string = ""
 </string>
           </argument>
@@ -89,6 +96,18 @@ if keyboard_check_pressed(vk_down)
     keyboard_string = ""
 }
 sel = clamp(sel,0,array_length_1d(options)-1)
+if sel == 4
+{
+    if keyboard_check_pressed(vk_left)
+    {
+        sel2 -= 1
+    }
+    if keyboard_check_pressed(vk_right)
+    {
+        sel2 += 1
+    }
+    sel2 = clamp(sel2,0,array_length_1d(games)-1)
+}
 keyboard_string = string_copy(keyboard_string, 1, 32);
 if keyboard_check_pressed(vk_enter)
 {
@@ -113,9 +132,17 @@ if keyboard_check_pressed(vk_enter)
             room_height = real(string_digits(keyboard_string))
             instance_destroy()
             break
-        
+            
         case 4:
-            game_restart()
+            instance_destroy()
+            scr_setgame(real(sel2))
+            break
+        
+        case 5:
+            if keyboard_string == "YES"
+                game_restart()
+            else
+                instance_destroy()
             break
     }
 }
@@ -150,7 +177,23 @@ draw_set_halign(fa_center)
 draw_set_valign(fa_top)
 draw_text(view_wport[0]/2,(view_hport[0]/2)-24,options[sel])
 draw_set_valign(fa_bottom)
-draw_text(view_wport[0]/2,(view_hport[0]/2)+24,keyboard_string)
+if sel != 4
+    draw_text(view_wport[0]/2,(view_hport[0]/2)+24,keyboard_string)
+else
+{
+    if sel2 - 1 &gt;= 0
+    {
+        draw_set_alpha(0.5)
+        draw_text(view_wport[0]/2-200,(view_hport[0]/2)+24,games[sel2-1])
+    }
+    if sel2 + 1 &lt; gameslen 
+    {
+        draw_set_alpha(0.5)
+        draw_text(view_wport[0]/2+200,(view_hport[0]/2)+24,games[sel2+1])
+    }
+    draw_set_alpha(1)
+    draw_text(view_wport[0]/2,(view_hport[0]/2)+24,games[sel2])
+}
 </string>
           </argument>
         </arguments>

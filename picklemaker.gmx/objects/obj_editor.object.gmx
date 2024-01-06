@@ -32,6 +32,8 @@ if room != rm_editor
 }
 if (instance_number(obj_editor) &gt; 1) {instance_destroy()}
 window_set_caption("PickleMaker v"+GM_version)
+global.game = 0
+global.gamestr = "crzpkl"
 mstartx = 0
 mstarty = 0
 maxobj = 2048
@@ -39,6 +41,7 @@ sx = 1 // obj x
 sy = 1 // obj y
 so = 0 // selected obj index
 selected = noone
+gridsize = 32
 selx = 0
 sely = 0
 objlist[0] = obj_solid
@@ -221,7 +224,7 @@ if instance_count-1 &gt;= maxobj
 }
 if (not (mouse_x &lt; 0 or mouse_y &lt; 0)) and (not (mouse_x &gt; room_width-1 or mouse_y &gt; room_height-1))
 {
-    with instance_create(floor(mouse_x/32)*32,floor(mouse_y/32)*32,objlist[so])
+    with instance_create(floor(mouse_x/gridsize)*gridsize,floor(mouse_y/gridsize)*gridsize,objlist[so])
     {
         other.selected = self.id
         image_xscale = other.sx
@@ -319,7 +322,7 @@ draw_text(view_wport[0]-8,view_hport[0]-12,string(room_width)+"x"+string(room_he
           <argument>
             <kind>1</kind>
             <string>/// draw obj at mouse, room borders
-draw_sprite_ext(object_get_sprite(objlist[so]),-1,floor(mouse_x/32)*32,floor(mouse_y/32)*32,sx,sy,0,c_white,0.5)
+draw_sprite_ext(object_get_sprite(objlist[so]),-1,floor(mouse_x/gridsize)*gridsize,floor(mouse_y/gridsize)*gridsize,sx,sy,0,c_white,0.5)
 draw_set_alpha(1)
 draw_rectangle_color(0,0,room_width-1,room_height-1,c_white,c_white,c_white,c_white,true)
 if selected != noone
@@ -412,7 +415,7 @@ instance_create(0,0,obj_settingselect)
           <argument>
             <kind>1</kind>
             <string>/// credits
-show_message("PickleMaker v"+GM_version+"#A Level Editor for Crazy Pickle#Made by#cache99 - coding#penoPleno - background")
+show_message("PickleMaker v"+GM_version+"#A Level Editor for Cool Games#Made by#cache99 - coding#penoPleno - background")
 show_message("How To Use##F1 - Save level#F2 - Load level for editing#F4 - this thing#F5 - Open the Setting Select#Q, E - Zoom#WASD or Middle mouse button - move camera#Arrow keys - resize item or selected object#Arrow keys + ctrl with object selected - move object#R - Reset size (doesnt work with selected)#T - Reset view#Right mouse button - remove object#Left mouse button - place object#Mouse wheel - change object")
 </string>
           </argument>
@@ -438,14 +441,14 @@ show_message("How To Use##F1 - Save level#F2 - Load level for editing#F4 - this 
             <kind>1</kind>
             <string>/// load level for editing
 show_debug_message("loading")
-filename = get_string("Level filename (without .crzpkl.ini)","")+".crzpkl.ini"
-if filename == ".crzpkl.ini"
+filename = get_string("Level filename (without .ini)","")+".ini"
+if filename == ".ini"
     exit
 ini_open(filename)
 result = ini_read_string("data","data","")
 if result == ""
 {
-    show_message("Level doesnt exist or invalid")
+    show_message("ERROR: Level doesnt exist or invalid")
 }
 levelinfo = ds_list_create()
 ds_list_read(levelinfo,result)
@@ -453,10 +456,12 @@ levelname = ini_read_string("info","name","level")
 levelauthor = ini_read_string("info","author","unknown")
 levelx = ini_read_real("info","x",1280)
 levely = ini_read_real("info","y",960)
+global.game = ini_read_real("info", "game", 0) // set the game as crazy pickle, for compatibility. Since im nice
+scr_setgame(global.game)
 ini_close()
 room_width = levelx
 room_height = levely
-show_debug_message("and now for the chaser")
+show_debug_message("REMOVING PREVIOUS LEVEL")
 // remove useless
 with obj_solid
     instance_destroy()
@@ -477,7 +482,20 @@ for (var i = 0; i &lt; ds_list_size(levelinfo); i++;)
     show_debug_message(object)
     if object[2] != "obj_null"
     {
-        obj = instance_create(real(object[0]),real(object[1]),asset_get_index(object[2]))
+        objnamefuckshit = object[2]
+        switch global.game
+        {
+            case 0: // crazy pickle
+                objnamefuckshit+="_pickle"
+                break
+            case 1: // lart
+                objnamefuckshit+="_lart"
+                break
+            case 2: // poopermario
+                objnamefuckshit+="_pooper"
+                break
+        }
+        obj = instance_create(real(object[0]),real(object[1]),asset_get_index(objnamefuckshit))
         with obj
         {
             image_xscale = real(other.object[3])
@@ -515,6 +533,7 @@ ini_write_string("info", "name", levelname);
 ini_write_real("info", "x", room_width);
 ini_write_real("info", "y", room_height);
 ini_write_string("info", "author", levelauthor)
+ini_write_real("info", "game", global.game)
 for (var i = 0; i &lt; instance_count; i++;)
 {
     object = instance_find(all,i);
@@ -523,17 +542,20 @@ for (var i = 0; i &lt; instance_count; i++;)
         temparray = array_create(5)
         temparray[0] = object.x
         temparray[1] = object.y
-        temparray[2] = object_get_name(object.object_index)
+        // remove the suffix
+        name = object_get_name(object.object_index)
+        name = string_replace_all(name,"_pickle","")
+        name = string_replace_all(name,"_lart","")
+        name = string_replace_all(name,"_pooper","")
+        temparray[2] = name
         temparray[3] = object.image_xscale
         temparray[4] = object.image_yscale
         show_debug_message(temparray)
         ds_list_add(levelinfo,temparray)
     }
 }
-show_debug_message(ds_list_write(levelinfo))
-show_debug_message(json_encode(levelinfo))
 ini_write_string("data","data",ds_list_write(levelinfo))
-show_message("Saved as " + string_replace_all(levelname," ","_") + ".crzpkl.ini")
+show_message("Saved as " + string_replace_all(levelname," ","_") + "."+global.gamestr+".ini")
 ini_close()
 </string>
           </argument>
