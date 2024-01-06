@@ -454,9 +454,9 @@ levelname = ini_read_string("info","name","level")
 levelauthor = ini_read_string("info","author","unknown")
 room_width = ini_read_real("info","x",1280)
 room_height = ini_read_real("info","y",960)
+// set the game as crazy pickle, for compatibility. Since im nice
+scr_setgame(ini_read_real("info", "game", 0))
 ds_list_read(levelinfo,result)
-global.game = ini_read_real("info", "game", 0) // set the game as crazy pickle, for compatibility. Since im nice
-scr_setgame(global.game)
 ini_close()
 show_debug_message("REMOVING PREVIOUS LEVEL")
 // remove useless
