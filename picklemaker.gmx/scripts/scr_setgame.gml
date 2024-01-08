@@ -52,7 +52,7 @@ switch argument0
             objlist[9] = objRSlope
             objlist[10] = objSpring
             objlist[11] = objBall
-            objlist[12] = objSausageBoy
+            objlist[12] = objGoal
             scr_cleanlevel()
             gridsize = 16
         }

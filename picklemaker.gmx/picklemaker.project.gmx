@@ -72,7 +72,7 @@
       <object>objects\objRSlope</object>
       <object>objects\objSpring</object>
       <object>objects\objBall</object>
-      <object>objects\objSausageBoy</object>
+      <object>objects\objGoal</object>
     </objects>
     <objects name="unused">
       <object>objects\obj_ballviz</object>

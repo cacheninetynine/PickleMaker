@@ -464,6 +464,7 @@ scr_cleanlevel()
 for (var i = 0; i &lt; ds_list_size(levelinfo); i++;)
 {
     object = ds_list_find_value(levelinfo,i);
+    show_debug_message(object)
     if object[2] != "obj_null"
     {
         objnamefuckshit = object[2]
